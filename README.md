@@ -6,6 +6,7 @@
    
 > [!NOTE]
 > 配置 Go 镜像(可选): 
+> 
 > `go env -w  GOPROXY=https://goproxy.cn,direct`
 
 1.  安装 Wails Cli
