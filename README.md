@@ -2,8 +2,9 @@
 
 ### 准备工作
 
-1.  安装 Go (1.18+), NPM (Node 15+)
-    配置 Go 镜像(可选): `go env -w  GOPROXY=https://goproxy.cn,direct`
+1.  安装 Go (1.18+), NPM (Node 18.3+)
+    > [!NOTE]
+    > 配置 Go 镜像(可选): `go env -w  GOPROXY=https://goproxy.cn,direct`
 2.  安装 Wails Cli
 
     ```shell
