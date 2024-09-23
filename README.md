@@ -10,9 +10,7 @@
 >
 > 若你身处海外，你可自行修改此目录下的 `wails.json` 为:
 > ```json
-> {
->    "frontend:install": "npm install",
-> }
+> "frontend:install": "npm install",
 > ```
 
 > [!NOTE]
