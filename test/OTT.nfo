@@ -1,0 +1,16 @@
+fileversion=2
+ps_name=OTT
+ps_presetfilename=%FLPluginDBPath%\Installed\Effects\VST3\OTT.fst
+ps_files=1
+ps_file_name_0=OTT
+ps_file_filename_0=C:\Program Files\Common Files\VST3\OTT.vst3
+ps_file_plugclass_0=7
+ps_file_type_0=1
+ps_file_bitsize_0=64
+ps_file_arch_0=Intel
+ps_file_guid_0={56534558-6654-546F-7474-000000000000}
+ps_file_date_0=4676374293729955603
+ps_file_size_0=3379200
+ps_file_scanflags_0=1
+ps_file_vendorname_0=Xfer Records
+ps_file_category_0=Fx|Dynamics

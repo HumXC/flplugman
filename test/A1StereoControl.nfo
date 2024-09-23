@@ -1,0 +1,17 @@
+fileversion=2
+ps_name=A1StereoControl
+ps_presetfilename=%FLPluginDBPath%\Installed\Effects\VST\A1StereoControl.fst
+ps_files=1
+ps_file_name_0=A1StereoControl
+ps_file_filename_0=D:\DAW\VST\A1StereoControl-x64.dll
+ps_file_plugclass_0=0
+ps_file_type_0=1
+ps_file_bitsize_0=64
+ps_file_arch_0=Intel
+ps_file_magic_0=1093751651
+ps_file_guid_0={56535441-3153-6361-3173-746572656F63}
+ps_file_date_0=4676012264064203365
+ps_file_size_0=5290496
+ps_file_scanflags_0=1
+ps_file_vendorname_0=A1AUDIO.de
+ps_file_category_0=Effect
