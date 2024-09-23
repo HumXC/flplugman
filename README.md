@@ -8,7 +8,7 @@
 >
 > 所以在做一切事情之前，请先使用 `npm install cnpm` 安装 `cnpm`。
 >
-> 若你身处海外，你可自行修改此目录下的 `wails.json` 为:
+> 若你身处海外，你可自行修改此目录下的 `wails.json` 中的 `"frontend:install"` 为 `"npm install"`:
 > ```json
 > "frontend:install": "npm install",
 > ```
