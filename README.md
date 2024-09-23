@@ -13,8 +13,8 @@
     ```shell
     go install github.com/wailsapp/wails/v2/cmd/wails@latest
     ```
-
-.gitignore 忽略了 wails 生成的绑定代码(frontend/wailsjs)，所以初次克隆时，前端代码会出现找不到部分导入的情况。可以手动执行 `wails generate module` 生成 `wailsjs` 目录，或者运行以下任意一条命令会触发 `wailsjs` 的生成。
+> [!NOTE]
+> `.gitignore` 忽略了 wails 生成的绑定代码 (frontend/wailsjs)，所以初次克隆时，前端代码会出现找不到部分导入的情况。可以手动执行 `wails generate module` 生成 `wailsjs` 目录，或者运行以下任意一条命令会触发 `wailsjs` 的生成。
 
 调试:`wails dev`
 
