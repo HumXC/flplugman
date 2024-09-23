@@ -4,9 +4,16 @@
 
 1.  安装 Go (1.18+), NPM (Node 18.3+)
 > [!WARNING]
-> 在做一切事情之前，请先使用 `npm install cnpm` 安装 `cnpm`。
-> 
-> 以此来大幅加快调试与构建的速度。
+> 本项目使用 `cnpm` 来大幅加快调试与构建的速度，你必须安装 `cnpm` 才能运行本项目。
+>
+> 所以在做一切事情之前，请先使用 `npm install cnpm` 安装 `cnpm`。
+>
+> 若你身处海外，你可自行修改此目录下的 `wails.json` 为:
+> ```json
+> {
+>    "frontend:install": "npm install",
+> }
+> ```
 
 > [!NOTE]
 > 配置 Go 镜像(可选): 
