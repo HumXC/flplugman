@@ -1,8 +1,8 @@
-package main
+package nfo
 
 import (
 	"bufio"
-	"io"
+	"bytes"
 	"reflect"
 	"strconv"
 	"strings"
@@ -31,10 +31,10 @@ type PluginFile struct {
 	Category   string `nfo:"category"`
 }
 
-func ParsePlugin(nfo io.Reader) (Plugin, error) {
+func Unmarshal(nfo []byte) (Plugin, error) {
 	var p Plugin
 	m := make(map[string]string)
-	scanner := bufio.NewScanner(nfo)
+	scanner := bufio.NewScanner(bytes.NewReader(nfo))
 	for scanner.Scan() {
 		line := scanner.Text()
 		eqIndex := strings.Index(line, "=")
@@ -51,7 +51,7 @@ func ParsePlugin(nfo io.Reader) (Plugin, error) {
 		v := m["ps_"+tag]
 		if val.Field(i).Type() == reflect.TypeOf(make([]PluginFile, 0)) {
 			for j := 0; j < p.Files; j++ {
-				pf, err := parsePluginFile(m, j)
+				pf, err := unmarshalPluginFile(m, j)
 				if err != nil {
 					return p, err
 				}
@@ -70,7 +70,27 @@ func ParsePlugin(nfo io.Reader) (Plugin, error) {
 	}
 	return p, nil
 }
-func parsePluginFile(m map[string]string, index int) (PluginFile, error) {
+func Marshal(p Plugin) []byte {
+	result := bytes.NewBufferString("fileversion=2\n")
+
+	val := reflect.ValueOf(p)
+	typ := reflect.TypeOf(p)
+	for i := 0; i < val.NumField(); i++ {
+		fieldType := typ.Field(i)
+		tag := fieldType.Tag.Get("nfo")
+		if tag != "file" {
+			key := "ps_" + tag
+			value := getVal(val.Field(i))
+			result.WriteString(key + "=" + value + "\n")
+		} else {
+			for j := 0; j < val.Field(i).Len(); j++ {
+				marshalPluginFile(val.Field(i).Index(j), j, result)
+			}
+		}
+	}
+	return result.Bytes()
+}
+func unmarshalPluginFile(m map[string]string, index int) (PluginFile, error) {
 	var p PluginFile
 	val := reflect.ValueOf(&p).Elem()
 	typ := reflect.TypeOf(p)
@@ -84,6 +104,31 @@ func parsePluginFile(m map[string]string, index int) (PluginFile, error) {
 		}
 	}
 	return p, nil
+}
+func marshalPluginFile(v reflect.Value, index int, w *bytes.Buffer) {
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		fieldType := t.Field(i)
+		tag := fieldType.Tag.Get("nfo")
+		key := "ps_file_" + tag + "_" + strconv.Itoa(index)
+		value := getVal(v.Field(i))
+		if tag == "magic" && v.Field(i).Int() == 0 {
+			continue
+		}
+		w.WriteString(key + "=" + value + "\n")
+	}
+}
+
+func getVal(field reflect.Value) string {
+	switch field.Kind() {
+	case reflect.String: // string
+		return field.String()
+	case reflect.Int: // int
+		return strconv.Itoa(int(field.Int()))
+	case reflect.Int64: //int64
+		return strconv.Itoa(int(field.Int()))
+	}
+	return ""
 }
 func setVal(field reflect.Value, value string) error {
 	if value == "" {

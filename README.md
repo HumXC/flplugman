@@ -29,6 +29,8 @@
     go install github.com/wailsapp/wails/v2/cmd/wails@latest
     ```
 
+生成绑定: `wails generate module`
+
 调试: `wails dev`
 
 构建: `wails build`
