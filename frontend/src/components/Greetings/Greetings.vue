@@ -9,7 +9,7 @@ const Logo = {
 
 const Greetings = {
   Welcome: "欢迎使用",
-  Title: "FLPluginMan "
+  Title: "FLPluginMan"
 }
 
 // const data = reactive({
