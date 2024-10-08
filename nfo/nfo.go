@@ -9,6 +9,14 @@ import (
 )
 
 type Plugin struct {
+	FileVersion int    `nfo:"fileversion"`
+	Tip         string `nfo:"tip"`
+	Color       string `nfo:"color"`
+	Bitmap      string `nfo:"Bitmap"`
+	IconIndex   int    `nfo:"iconindex"`
+	PS          PS     `nfo:"ps"`
+}
+type PS struct {
 	Name           string       `nfo:"name"`
 	PresetFilename string       `nfo:"presetfilename"`
 	Files          int          `nfo:"files"`
@@ -31,124 +39,137 @@ type PluginFile struct {
 	Category   string `nfo:"category"`
 }
 
+func unmarshal(m map[string]any, val reflect.Value) error {
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		fieldType := typ.Field(i)
+		tag := fieldType.Tag.Get("nfo")
+		if tag == "" {
+			continue
+		}
+		v := m[tag]
+		f := val.Field(i)
+		switch v := v.(type) {
+		case map[string]any:
+			if err := unmarshal(v, f); err != nil {
+				return err
+			}
+		case []map[string]any:
+			length := len(v)
+			slice := reflect.MakeSlice(f.Type(), length, length)
+			for j := 0; j < length; j++ {
+				err := unmarshal(v[j], slice.Index(j))
+				if err != nil {
+					return err
+				}
+			}
+			f.Set(slice)
+		case string:
+			switch f.Kind() {
+			case reflect.String: // string
+				f.SetString(v)
+			case reflect.Int: // int
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					return err
+				}
+				f.SetInt(int64(i))
+			case reflect.Int64: //int64
+				i, err := strconv.Atoi(v)
+				if err != nil {
+					return err
+				}
+				f.SetInt(int64(i))
+			}
+		}
+	}
+	return nil
+}
 func Unmarshal(nfo []byte) (Plugin, error) {
 	var p Plugin
-	m := make(map[string]string)
+	m := make(map[string]any)
 	scanner := bufio.NewScanner(bytes.NewReader(nfo))
 	for scanner.Scan() {
 		line := scanner.Text()
 		eqIndex := strings.Index(line, "=")
-		key := line[:eqIndex]
+		keys := line[:eqIndex]
 		value := line[eqIndex+1:]
-		m[key] = value
-	}
-	val := reflect.ValueOf(&p).Elem()
-	typ := reflect.TypeOf(p)
-
-	for i := 0; i < val.NumField(); i++ {
-		fieldType := typ.Field(i)
-		tag := fieldType.Tag.Get("nfo")
-		v := m["ps_"+tag]
-		if val.Field(i).Type() == reflect.TypeOf(make([]PluginFile, 0)) {
-			for j := 0; j < p.Files; j++ {
-				pf, err := unmarshalPluginFile(m, j)
-				if err != nil {
-					return p, err
+		var parent map[string]any = m
+		ks := strings.Split(keys, "_")
+		index := -1
+		indexKey := ""
+		if num, err := strconv.Atoi(ks[len(ks)-1]); err == nil {
+			index = num
+			indexKey = ks[len(ks)-3]
+		}
+		for i, key := range ks {
+			if i == len(ks)-1 {
+				parent[key] = value
+				break
+			}
+			if index != -1 && key == indexKey {
+				_, ok := parent[key]
+				if !ok {
+					ps := m["ps"].(map[string]any)
+					lengthStr := ps["files"].(string)
+					length, _ := strconv.Atoi(lengthStr)
+					parent[key] = make([]map[string]any, length)
 				}
-				slice := val.Field(i)
-				newSlice := reflect.MakeSlice(slice.Type(), slice.Len()+1, slice.Cap()+1)
-				reflect.Copy(newSlice, slice)
-				newSlice.Index(slice.Len()).Set(reflect.ValueOf(pf))
-				val.Field(i).Set(newSlice)
+				arr := parent[key].([]map[string]any)
+				if arr[index] == nil {
+					arr[index] = make(map[string]any)
+				}
+				arr[index][ks[i+1]] = value
+				break
 			}
-		} else {
-			err := setVal(val.Field(i), v)
-			if err != nil {
-				return p, err
+			_, ok := parent[key]
+			if !ok {
+				parent[key] = make(map[string]any)
 			}
+			parent = parent[key].(map[string]any)
 		}
 	}
-	return p, nil
+	return p, unmarshal(m, reflect.ValueOf(&p).Elem())
 }
-func Marshal(p Plugin) []byte {
-	result := bytes.NewBufferString("fileversion=2\n")
-
-	val := reflect.ValueOf(p)
-	typ := reflect.TypeOf(p)
+func marshal(prefix, suffix string, val reflect.Value, w *bytes.Buffer) {
+	typ := val.Type()
 	for i := 0; i < val.NumField(); i++ {
 		fieldType := typ.Field(i)
 		tag := fieldType.Tag.Get("nfo")
-		if tag != "file" {
-			key := "ps_" + tag
-			value := getVal(val.Field(i))
-			result.WriteString(key + "=" + value + "\n")
-		} else {
-			for j := 0; j < val.Field(i).Len(); j++ {
-				marshalPluginFile(val.Field(i).Index(j), j, result)
+		if tag == "" {
+			continue
+		}
+		key := prefix + tag + suffix
+		f := val.Field(i)
+		value := ""
+		switch f.Kind() {
+		case reflect.String: // string
+			value = f.String()
+		case reflect.Int, reflect.Int64: // int
+			num := int(f.Int())
+			if num == 0 {
+				break
 			}
+			value = strconv.Itoa(num)
+		case reflect.Struct:
+			marshal(key+"_", "", f, w)
+			continue
+		case reflect.Slice:
+			for j := 0; j < f.Len(); j++ {
+				marshal(key+"_", "_"+strconv.Itoa(j), f.Index(j), w)
+			}
+			continue
 		}
-	}
-	return result.Bytes()
-}
-func unmarshalPluginFile(m map[string]string, index int) (PluginFile, error) {
-	var p PluginFile
-	val := reflect.ValueOf(&p).Elem()
-	typ := reflect.TypeOf(p)
-	for i := 0; i < val.NumField(); i++ {
-		fieldType := typ.Field(i)
-		tag := fieldType.Tag.Get("nfo")
-		v := m["ps_file_"+tag+"_"+strconv.Itoa(index)]
-		err := setVal(val.Field(i), v)
-		if err != nil {
-			return p, err
-		}
-	}
-	return p, nil
-}
-func marshalPluginFile(v reflect.Value, index int, w *bytes.Buffer) {
-	t := v.Type()
-	for i := 0; i < v.NumField(); i++ {
-		fieldType := t.Field(i)
-		tag := fieldType.Tag.Get("nfo")
-		key := "ps_file_" + tag + "_" + strconv.Itoa(index)
-		value := getVal(v.Field(i))
-		if tag == "magic" && v.Field(i).Int() == 0 {
+		if value == "" {
 			continue
 		}
 		w.WriteString(key + "=" + value + "\n")
 	}
-}
 
-func getVal(field reflect.Value) string {
-	switch field.Kind() {
-	case reflect.String: // string
-		return field.String()
-	case reflect.Int: // int
-		return strconv.Itoa(int(field.Int()))
-	case reflect.Int64: //int64
-		return strconv.Itoa(int(field.Int()))
-	}
-	return ""
 }
-func setVal(field reflect.Value, value string) error {
-	if value == "" {
-		return nil
-	}
-	switch field.Kind() {
-	case reflect.String: // string
-		field.SetString(value)
-	case reflect.Int: // int
-		i, err := strconv.Atoi(value)
-		if err != nil {
-			return err
-		}
-		field.SetInt(int64(i))
-	case reflect.Int64: //int64
-		i, err := strconv.Atoi(value)
-		if err != nil {
-			return err
-		}
-		field.SetInt(int64(i))
-	}
-	return nil
+func Marshal(p Plugin) []byte {
+	val := reflect.ValueOf(p)
+	result := bytes.NewBuffer(nil)
+	marshal("", "", val, result)
+	return result.Bytes()
 }

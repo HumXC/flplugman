@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 var ConfigPath = "./"
@@ -18,12 +20,22 @@ func init() {
 }
 
 type Config struct {
-	IsGreeted bool `json:"is_greeted"`
+	IsGreeted bool   `json:"is_greeted"`
+	FLDataDir string `json:"fl_data_dir"`
 }
 
 func Get() (Config, error) {
 	var c Config
 	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
+		key, err := registry.OpenKey(registry.CURRENT_USER, `Software\Image-Line\Shared\Paths`, registry.QUERY_VALUE)
+		if err != nil {
+			return c, err
+		}
+		val, _, err := key.GetStringValue("Shared data")
+		if err != nil {
+			return c, err
+		}
+		c.FLDataDir = val
 		return c, nil
 	}
 	b, err := os.ReadFile(ConfigPath)
@@ -44,7 +56,7 @@ func Save(c Config) error {
 			return err
 		}
 	}
-	b, err := json.Marshal(c)
+	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
