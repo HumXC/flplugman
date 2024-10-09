@@ -1,3 +1,19 @@
+<template>
+  <section class="Container">
+    <div class="LogoContainer">
+      <img :src="Logo.Src" :alt="Logo.Alt">
+    </div>
+    <div ref="text" class="TextContainer">
+      <h2 id="welcome">{{ Greetings.Welcome }}</h2>
+      <h1 id="title">{{ Greetings.Title }}</h1>
+    </div>
+    <!-- <button id="btn" class="animated-gradient">
+      →
+    </button> -->
+    <Button id="btn" />
+  </section>
+</template>
+
 <script lang="ts" setup>
 import { onMounted, reactive } from 'vue'
 import * as backend from '../../../wailsjs/go/main/App'
@@ -51,21 +67,6 @@ onMounted(() => {
 
 </script>
 
-<template>
-  <section class="Container">
-    <div class="LogoContainer">
-      <img :src="Logo.Src" :alt="Logo.Alt">
-    </div>
-    <div ref="text" class="TextContainer">
-      <h2 id="welcome">{{ Greetings.Welcome }}</h2>
-      <h1 id="title">{{ Greetings.Title }}</h1>
-    </div>
-    <!-- <button id="btn" class="animated-gradient">
-      →
-    </button> -->
-    <Button id="btn" />
-  </section>
-</template>
 
 <style scoped>
 @keyframes StartUp {

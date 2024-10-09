@@ -17,6 +17,7 @@
 function handleClick() {
     console.log("Button clicked");
 }
+import * as backend from '../../../wailsjs/go/main/App'
 </script>
 
 <style scoped>
@@ -98,7 +99,7 @@ function handleClick() {
 
 .button:active::before {
     transform: scale(1.1);
-    transition: transform 0.3s cubic-bezier(0.7, -0.01, 0.15, 1.03);
+    transition: transform 0.1s cubic-bezier(0.7, -0.01, 0.15, 1.03);
 }
 
 @keyframes FadeGradient {
