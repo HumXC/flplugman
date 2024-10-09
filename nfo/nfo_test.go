@@ -18,45 +18,51 @@ func TestUnmarshal(t *testing.T) {
 	}
 	_ = nfo2
 	want1 := Plugin{
-		Name:           "A1StereoControl",
-		PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
-		Files:          1,
-		File: []PluginFile{
-			{
-				Name:       "A1StereoControl",
-				Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
-				PlugClass:  0,
-				Type:       1,
-				BitSize:    64,
-				Arch:       "Intel",
-				Magic:      1093751651,
-				GUID:       "{56535441-3153-6361-3173-746572656F63}",
-				Date:       4676012264064203365,
-				Size:       5290496,
-				ScanFlags:  1,
-				Vendorname: "A1AUDIO.de",
-				Category:   "Effect",
+		FileVersion: 2,
+		PS: PS{
+			Name:           "A1StereoControl",
+			PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
+			Files:          1,
+			File: []PluginFile{
+				{
+					Name:       "A1StereoControl",
+					Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
+					PlugClass:  0,
+					Type:       1,
+					BitSize:    64,
+					Arch:       "Intel",
+					Magic:      1093751651,
+					GUID:       "{56535441-3153-6361-3173-746572656F63}",
+					Date:       4676012264064203365,
+					Size:       5290496,
+					ScanFlags:  1,
+					Vendorname: "A1AUDIO.de",
+					Category:   "Effect",
+				},
 			},
 		},
 	}
 
 	want2 := Plugin{
-		Name:           "OTT",
-		PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST3\\OTT.fst",
-		Files:          1, File: []PluginFile{
-			{
-				Name:       "OTT",
-				Filename:   "C:\\Program Files\\Common Files\\VST3\\OTT.vst3",
-				PlugClass:  7,
-				Type:       1,
-				BitSize:    64,
-				Arch:       "Intel",
-				GUID:       "{56534558-6654-546F-7474-000000000000}",
-				Date:       4676374293729955603,
-				Size:       3379200,
-				ScanFlags:  1,
-				Vendorname: "Xfer Records",
-				Category:   "Fx|Dynamics",
+		FileVersion: 2,
+		PS: PS{
+			Name:           "OTT",
+			PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST3\\OTT.fst",
+			Files:          1, File: []PluginFile{
+				{
+					Name:       "OTT",
+					Filename:   "C:\\Program Files\\Common Files\\VST3\\OTT.vst3",
+					PlugClass:  7,
+					Type:       1,
+					BitSize:    64,
+					Arch:       "Intel",
+					GUID:       "{56534558-6654-546F-7474-000000000000}",
+					Date:       4676374293729955603,
+					Size:       3379200,
+					ScanFlags:  1,
+					Vendorname: "Xfer Records",
+					Category:   "Fx|Dynamics",
+				},
 			},
 		},
 	}
@@ -71,6 +77,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 	assert.Equal(t, got2, want2)
 }
+
 func BenchmarkUnmarshal(b *testing.B) {
 	nfo1, err := os.ReadFile("../test/A1StereoControl.nfo")
 	if err != nil {
@@ -88,7 +95,6 @@ ps_presetfilename=%FLPluginDBPath%\Installed\Effects\VST\A1StereoControl.fst
 ps_files=1
 ps_file_name_0=A1StereoControl
 ps_file_filename_0=D:\DAW\VST\A1StereoControl-x64.dll
-ps_file_plugclass_0=0
 ps_file_type_0=1
 ps_file_bitsize_0=64
 ps_file_arch_0=Intel
@@ -118,44 +124,50 @@ ps_file_vendorname_0=Xfer Records
 ps_file_category_0=Fx|Dynamics
 `
 	p1 := Plugin{
-		Name:           "A1StereoControl",
-		PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
-		Files:          1,
-		File: []PluginFile{
-			{
-				Name:       "A1StereoControl",
-				Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
-				PlugClass:  0,
-				Type:       1,
-				BitSize:    64,
-				Arch:       "Intel",
-				Magic:      1093751651,
-				GUID:       "{56535441-3153-6361-3173-746572656F63}",
-				Date:       4676012264064203365,
-				Size:       5290496,
-				ScanFlags:  1,
-				Vendorname: "A1AUDIO.de",
-				Category:   "Effect",
+		FileVersion: 2,
+		PS: PS{Name: "A1StereoControl",
+			PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
+			Files:          1,
+			File: []PluginFile{
+				{
+					Name:       "A1StereoControl",
+					Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
+					PlugClass:  0,
+					Type:       1,
+					BitSize:    64,
+					Arch:       "Intel",
+					Magic:      1093751651,
+					GUID:       "{56535441-3153-6361-3173-746572656F63}",
+					Date:       4676012264064203365,
+					Size:       5290496,
+					ScanFlags:  1,
+					Vendorname: "A1AUDIO.de",
+					Category:   "Effect",
+				},
 			},
 		},
 	}
 	p2 := Plugin{
-		Name:           "OTT",
-		PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST3\\OTT.fst",
-		Files:          1, File: []PluginFile{
-			{
-				Name:       "OTT",
-				Filename:   "C:\\Program Files\\Common Files\\VST3\\OTT.vst3",
-				PlugClass:  7,
-				Type:       1,
-				BitSize:    64,
-				Arch:       "Intel",
-				GUID:       "{56534558-6654-546F-7474-000000000000}",
-				Date:       4676374293729955603,
-				Size:       3379200,
-				ScanFlags:  1,
-				Vendorname: "Xfer Records",
-				Category:   "Fx|Dynamics",
+		FileVersion: 2,
+		PS: PS{
+			Name:           "OTT",
+			PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST3\\OTT.fst",
+			Files:          1,
+			File: []PluginFile{
+				{
+					Name:       "OTT",
+					Filename:   "C:\\Program Files\\Common Files\\VST3\\OTT.vst3",
+					PlugClass:  7,
+					Type:       1,
+					BitSize:    64,
+					Arch:       "Intel",
+					GUID:       "{56534558-6654-546F-7474-000000000000}",
+					Date:       4676374293729955603,
+					Size:       3379200,
+					ScanFlags:  1,
+					Vendorname: "Xfer Records",
+					Category:   "Fx|Dynamics",
+				},
 			},
 		},
 	}
@@ -166,24 +178,26 @@ ps_file_category_0=Fx|Dynamics
 }
 func BenchmarkMarshal(b *testing.B) {
 	p1 := Plugin{
-		Name:           "A1StereoControl",
-		PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
-		Files:          1,
-		File: []PluginFile{
-			{
-				Name:       "A1StereoControl",
-				Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
-				PlugClass:  0,
-				Type:       1,
-				BitSize:    64,
-				Arch:       "Intel",
-				Magic:      1093751651,
-				GUID:       "{56535441-3153-6361-3173-746572656F63}",
-				Date:       4676012264064203365,
-				Size:       5290496,
-				ScanFlags:  1,
-				Vendorname: "A1AUDIO.de",
-				Category:   "Effect",
+		PS: PS{
+			Name:           "A1StereoControl",
+			PresetFilename: "%FLPluginDBPath%\\Installed\\Effects\\VST\\A1StereoControl.fst",
+			Files:          1,
+			File: []PluginFile{
+				{
+					Name:       "A1StereoControl",
+					Filename:   "D:\\DAW\\VST\\A1StereoControl-x64.dll",
+					PlugClass:  0,
+					Type:       1,
+					BitSize:    64,
+					Arch:       "Intel",
+					Magic:      1093751651,
+					GUID:       "{56535441-3153-6361-3173-746572656F63}",
+					Date:       4676012264064203365,
+					Size:       5290496,
+					ScanFlags:  1,
+					Vendorname: "A1AUDIO.de",
+					Category:   "Effect",
+				},
 			},
 		},
 	}
