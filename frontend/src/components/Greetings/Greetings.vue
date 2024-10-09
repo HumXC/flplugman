@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, reactive } from 'vue'
-import * as backend from '../../../wailsjs/go/main/App'
+import { GetConfig, SaveConfig } from "../../../wailsjs/go/main/App";
 import Button from './Button.vue';
 const Logo = {
   Src: "/src/assets/images/logo.jpg",
@@ -12,16 +12,15 @@ const Greetings = {
   Title: "FLPluginMan"
 }
 
-// const data = reactive({
-//   name: "",
-//   resultText: "Please enter your name below 👇",
-// })
 
-// function greet() {
-//   backend.Greet(data.name).then(result => {
-//     data.resultText = result
-//   })
-// }
+// 阻止右键菜单
+onMounted(() => {
+  window.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+  });
+});
+const config = await GetConfig();
+
 function RollingUp() {
   const btn = document.getElementById('btn') as HTMLElement | null;
   const text = document.querySelector('.TextContainer') as HTMLElement | null;
@@ -47,8 +46,19 @@ function RollingUp() {
 onMounted(() => {
   RollingUp();
 });
-
-
+// TODO: 
+//  1. 开始界面
+//
+//  2. 设置FL用户数据目录
+//     文本：FL用户数据目录 是 FL Studio 用于存储插件信息的数据库文件路径
+//         默认的文件夹是 [文档]/Image-Line
+//         可以在 FL 中的 选项>文件设置>用户数据文件夹 中找到
+//         已经为你找到一个合适的路径, 如果需要更改, 请点击按钮选择新的路径
+//     文本框：显示 config.fl_data_dir
+//     按钮：<打开> 打开当前文件所在路径
+//     按钮：<更改> 打开资源管理器选择路径
+// 
+//  3. 结束界面 退出时调用 await SaveConfig(config) 保存配置
 </script>
 
 <template>
