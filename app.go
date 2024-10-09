@@ -7,9 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/HumXC/flplugman/config"
 	"github.com/HumXC/flplugman/nfo"
+	"github.com/cascax/colorthief-go"
+	"github.com/reujab/wallpaper"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type Plugin struct {
@@ -35,6 +39,54 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	go func(ctx context.Context) {
+		modTime := time.Now() // 通过修改时间来判断更改
+		for {
+			w, err := wallpaper.Get()
+			if err != nil {
+				runtime.LogError(ctx, err.Error())
+				return
+			}
+			stat, err := os.Stat(w)
+			if err != nil {
+				runtime.LogError(ctx, err.Error())
+				return
+			}
+
+			if stat.ModTime() != modTime {
+				modTime = stat.ModTime()
+				cs, err := colorthief.GetPaletteFromFile(w, 6)
+				if err != nil {
+					runtime.LogError(ctx, err.Error())
+					return
+				}
+				result := make([]string, 0, len(cs))
+				for _, c := range cs {
+					r, g, b, _ := c.RGBA()
+					result = append(result, fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8))
+				}
+				runtime.EventsEmit(ctx, "wallpaper-color-changed", result)
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}(ctx)
+}
+
+func (a *App) GetWallpaperColor() ([]string, error) {
+	w, err := wallpaper.Get()
+	if err != nil {
+		return nil, err
+	}
+	cs, err := colorthief.GetPaletteFromFile(w, 6)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, 0, len(cs))
+	for _, c := range cs {
+		r, g, b, _ := c.RGBA()
+		result = append(result, fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8))
+	}
+	return result, nil
 }
 
 func (a *App) GetConfig() (config.Config, error) {
@@ -78,6 +130,7 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 	if plug == nil {
 		return Plugin{}, fmt.Errorf("plugin is nil")
 	}
+	runtime.LogInfof(a.ctx, "MovePlugin %s: %s to %s", plug.Name, plug.PresetPath, path)
 	p := *plug
 	if filepath.IsAbs(path) {
 		return p, fmt.Errorf("path \"%s\" must be relative path", path)
@@ -122,7 +175,6 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 }
 
 func deleteEmptyDir(dir string) error {
-	fmt.Println("删除", dir)
 	es, err := os.ReadDir(dir)
 	if err != nil {
 		return err
