@@ -13,17 +13,19 @@ import (
 )
 
 type Plugin struct {
-	nfo.Plugin
+	Nfo        nfo.Plugin
 	PresetPath string // 相对于 PluginDBPath 的路径
 	Name       string // .fst 和 .nfo 的无后缀文件名
-	Fst        string // .fst 的完整路径
-	Nfo        string // .nfo 的完整路径
+	FstName    string // .fst 的完整路径
+	NfoName    string // .nfo 的完整路径
+	Vendorname string
 }
 
 // App struct
 type App struct {
-	ctx    context.Context
-	config *config.Config
+	ctx           context.Context
+	config        *config.Config
+	isSavedConfig bool
 }
 
 // NewApp creates a new App application struct
@@ -36,7 +38,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) GetConfig() (config.Config, error) {
-	if a.config == nil {
+	if a.config == nil || a.isSavedConfig {
 		c, err := config.Get()
 		if err != nil {
 			return config.Config{}, err
@@ -47,8 +49,12 @@ func (a *App) GetConfig() (config.Config, error) {
 }
 
 func (a *App) SaveConfig(c config.Config) error {
+	if err := config.Save(c); err != nil {
+		return err
+	}
 	a.config = &c
-	return config.Save(c)
+	a.isSavedConfig = true
+	return nil
 }
 
 func (a *App) GetConfigPath() string {
@@ -92,18 +98,18 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 		}
 	}
 
-	if err := os.Rename(p.Fst, distFst); err != nil {
+	if err := os.Rename(p.FstName, distFst); err != nil {
 		return p, err
 	}
-	p.Fst = distFst
-	p.PS.PresetFilename = p.Fst
-	if err := os.WriteFile(distNfo, nfo.Marshal(p.Plugin), 0644); err != nil {
+	p.FstName = distFst
+	p.Nfo.PS.PresetFilename = p.FstName
+	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
 		return p, err
 	}
-	if err := os.Remove(p.Nfo); err != nil {
+	if err := os.Remove(p.NfoName); err != nil {
 		return p, err
 	}
-	p.Nfo = distNfo
+	p.NfoName = distNfo
 
 	srcDir := filepath.Join(flPluginDB, p.PresetPath)
 	p.PresetPath = path
@@ -160,12 +166,17 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 			return err
 		}
 		base := filepath.Base(p.PS.PresetFilename)
+		vendornames := []string{}
+		for _, v := range p.PS.File {
+			vendornames = append(vendornames, v.Vendorname)
+		}
 		pp := Plugin{
-			Plugin:     p,
+			Nfo:        p,
 			PresetPath: filepath.Dir(rel),
 			Name:       base[:len(base)-4],
-			Fst:        p.PS.PresetFilename,
-			Nfo:        p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
+			FstName:    p.PS.PresetFilename,
+			NfoName:    p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
+			Vendorname: strings.Join(vendornames, ","),
 		}
 		result = append(result, pp)
 		return nil

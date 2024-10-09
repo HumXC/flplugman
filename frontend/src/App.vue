@@ -1,21 +1,27 @@
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import Greetings from "./components/Greetings/Greetings.vue";
 import { GetConfig } from "../wailsjs/go/main/App";
+import { LogInfo } from "../wailsjs/runtime/runtime";
 
 // 阻止右键菜单
 onMounted(() => {
-  window.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-  });
+    window.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+    });
 });
-const is_greeted =( await GetConfig()).is_greeted;
+
+const isGreeted = ref(false);
+onMounted(async () => {
+    isGreeted.value = (await GetConfig()).is_greeted;
+    LogInfo("isGreeted: " + isGreeted);
+});
 </script>
 
 <template>
-  <div v-if="!is_greeted">
-      <Greetings />
-  </div>
+    <div>
+        <Greetings v-if="!isGreeted" />
+    </div>
 </template>
 
 <style></style>
