@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,12 +19,14 @@ import (
 )
 
 type Plugin struct {
-	Nfo        nfo.Plugin
-	PresetPath string // 相对于 PluginDBPath 的路径
-	Name       string // .fst 和 .nfo 的无后缀文件名
-	FstName    string // .fst 的完整路径
-	NfoName    string // .nfo 的完整路径
-	Vendorname string
+	Nfo           nfo.Plugin
+	PresetPath    string // 相对于 PluginDBPath 的路径
+	Name          string // .fst 和 .nfo 的无后缀文件名
+	FstName       string // .fst 的完整路径
+	NfoName       string // .nfo 的完整路径
+	Vendorname    string
+	Cover         string // 封面的 Base64 编码
+	CoverMimeType string // 封面的类型
 }
 
 // App struct
@@ -139,9 +143,12 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 	if err != nil {
 		return p, err
 	}
+	path = filepath.Clean(path)
+	if path == "" {
+		return p, fmt.Errorf("path is empty")
+	}
 
 	dist := filepath.Join(flPluginDB, path, p.Name)
-
 	distFst := dist + ".fst"
 	distNfo := dist + ".nfo"
 
@@ -150,12 +157,30 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 			return p, err
 		}
 	}
-
+	// 移动 .fst
 	if err := os.Rename(p.FstName, distFst); err != nil {
 		return p, err
 	}
 	p.FstName = distFst
 	p.Nfo.PS.PresetFilename = p.FstName
+
+	// 移动封面
+	if p.Cover != "" {
+		bitmap, err := base64.StdEncoding.DecodeString(p.Cover)
+		if err != nil {
+			return p, err
+		}
+
+		if err := os.Remove(filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap)); err != nil {
+			return p, err
+		}
+		coverSuffix := "." + strings.Split(p.CoverMimeType, "/")[1]
+		if err := os.WriteFile(dist+coverSuffix, bitmap, 0644); err != nil {
+			return p, err
+		}
+		p.Nfo.Bitmap = p.Name + coverSuffix
+	}
+	// 移动 .nfo
 	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
 		return p, err
 	}
@@ -222,6 +247,7 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 		for _, v := range p.PS.File {
 			vendornames = append(vendornames, v.Vendorname)
 		}
+
 		pp := Plugin{
 			Nfo:        p,
 			PresetPath: filepath.Dir(rel),
@@ -229,6 +255,16 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 			FstName:    p.PS.PresetFilename,
 			NfoName:    p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
 			Vendorname: strings.Join(vendornames, ","),
+		}
+		if p.Bitmap != "" {
+			bitmap := filepath.Join(filepath.Dir(path), p.Bitmap)
+			f, err := os.ReadFile(bitmap)
+			if err != nil {
+				runtime.LogError(a.ctx, err.Error())
+			} else {
+				pp.Cover = base64.StdEncoding.EncodeToString(f)
+				pp.CoverMimeType = http.DetectContentType(f)
+			}
 		}
 		result = append(result, pp)
 		return nil

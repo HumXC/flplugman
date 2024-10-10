@@ -92,6 +92,9 @@ func Unmarshal(nfo []byte) (Plugin, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		eqIndex := strings.Index(line, "=")
+		if eqIndex == -1 {
+			continue
+		}
 		keys := line[:eqIndex]
 		value := line[eqIndex+1:]
 		var parent map[string]any = m
