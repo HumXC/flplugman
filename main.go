@@ -3,7 +3,9 @@ package main
 import (
 	"embed"
 
+	"github.com/HumXC/flplugman/log"
 	"github.com/wailsapp/wails/v2"
+	wailsLogger "github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
@@ -11,10 +13,12 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+var LogLevel = wailsLogger.DEBUG
 
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
+	logger := log.NewLogger(LogLevel)
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "flplugman",
@@ -28,7 +32,10 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
+			&log.JSLogger{SugaredLogger: logger},
 		},
+		Logger:   &log.WailsLogger{SugaredLogger: logger},
+		LogLevel: LogLevel,
 		Windows: &windows.Options{
 			WebviewIsTransparent:              false,
 			WindowIsTranslucent:               true,
