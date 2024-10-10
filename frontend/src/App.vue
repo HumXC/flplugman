@@ -1,31 +1,32 @@
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from "vue";
-import Greetings from "./components/Greetings/Greetings.vue";
-import { GetConfig } from "../wailsjs/go/main/App";
-import { LogInfo } from "../wailsjs/runtime/runtime";
-
-const IsGreeted = ref(true)
-// 阻止右键菜单
+import { onMounted } from "vue";
+import { RouterView } from "vue-router";
 onMounted(() => {
   window.addEventListener("contextmenu", function (e) {
     e.preventDefault();
   });
 });
-
-const isGreeted = ref(false);
-onMounted(async () => {
-  isGreeted.value = (await GetConfig()).is_greeted;
-  LogInfo("isGreeted: " + isGreeted);
-});
 </script>
 
 <template>
-  <<<<<<< HEAD <Greetings v-if="IsGreeted" />
-  =======
-  <div>
-    <Greetings v-if="!isGreeted" />
-  </div>
-  >>>>>>> e104659dc69116a953d877ff1fce92d8590bea3b
+  <router-view v-slot="{ Component }">
+    <transition name="scale" mode="out-in">
+      <component :is="Component" :key="$route.path" />
+    </transition>
+  </router-view>
 </template>
 
-<style></style>
+<style scoped>
+.scale-enter-active,
+.scale-leave-active {
+  opacity: 1;
+  filter: blur(0px);
+  transition: filter 0s ease, opacity .5s ease;
+}
+
+.scale-enter-from,
+.scale-leave-to {
+  opacity: 0;
+  filter: blur(10px);
+}
+</style>

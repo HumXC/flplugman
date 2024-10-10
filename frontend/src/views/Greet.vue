@@ -1,25 +1,18 @@
 <template>
-    <section class="Container">
-        <div class="LogoContainer">
-            <img :src="Logo.Src" :alt="Logo.Alt">
-        </div>
-        <div ref="text" class="TextContainer">
-            <h2 id="welcome">{{ Greetings.Welcome }}</h2>
-            <h1 id="title">{{ Greetings.Title }}</h1>
-        </div>
-        <!-- <button id="btn" class="animated-gradient">
-      →
-    </button> -->
-        <Button id="btn" />
-    </section>
+    <div class="LogoContainer">
+        <img :src="Logo.Src" :alt="Logo.Alt">
+    </div>
+    <div ref="text" class="TextContainer">
+        <h2 id="welcome">{{ Greetings.Welcome }}</h2>
+        <h1 id="title">{{ Greetings.Title }}</h1>
+    </div>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, reactive } from "vue";
-import { GetConfig, SaveConfig } from "../../../wailsjs/go/main/App";
-import Button from "./Button.vue";
+import { GetConfig, SaveConfig } from "../../wailsjs/go/main/App";
 const Logo = {
-    Src: "/src/assets/images/logo.jpg",
+    Src: "/src/assets/images/logo.png",
     Alt: "Logo",
 };
 
@@ -28,23 +21,20 @@ const Greetings = {
     Title: "FLPluginMan",
 };
 
-// 阻止右键菜单
-onMounted(() => {
-    window.addEventListener("contextmenu", function (e) {
-        e.preventDefault();
-    });
-});
-
 function RollingUp() {
     const btn = document.getElementById("btn") as HTMLElement | null;
     const text = document.querySelector(".TextContainer") as HTMLElement | null;
     const ctn = document.querySelector(".Container") as HTMLElement | null;
 
     if (!btn || !text || !ctn) return;
+
     const MainHeight = btn.clientHeight + text.clientHeight;
     const SectionHeight = MainHeight / 2;
 
-    // Init
+    // 防止与 Vue Router 的组件过渡动画冲突
+    ctn.style.transition = 'none';
+
+    // Init 位置
     ctn.style.transform = `translateY(${SectionHeight}px)`;
 
     ctn.animate([{ transform: `translateY(${SectionHeight}px)` }, { transform: `translateY(0)` }], {
@@ -53,10 +43,16 @@ function RollingUp() {
         fill: "forwards",
         delay: 1000,
     });
+
+    setTimeout(() => {
+        ctn.style.transition = '';
+    }, 1000);
 }
+
 onMounted(() => {
     RollingUp();
 });
+
 // TODO:
 //  1. 开始界面
 //
@@ -104,14 +100,6 @@ onMounted(() => {
     100% {
         opacity: 1;
     }
-}
-
-.Container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
 }
 
 .LogoContainer {

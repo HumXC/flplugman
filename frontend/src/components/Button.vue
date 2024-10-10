@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="ButtonContainer">
         <div class="button" @click="handleClick">
             <div class="arrow">
                 <svg t="1727575500694" viewBox="0 0 1000 1000" version="1.1" xmlns="http://www.w3.org/2000/svg"
@@ -17,7 +17,7 @@
 function handleClick() {
     console.log("Button clicked");
 }
-import * as backend from '../../../wailsjs/go/main/App'
+import * as backend from '../../wailsjs/go/main/App'
 </script>
 
 <style scoped>
@@ -34,13 +34,21 @@ import * as backend from '../../../wailsjs/go/main/App'
     }
 }
 
+.ButtonContainer {
+    display: flex;
+    position: relative;
+    height: 80px;
+    width: 80px;
+    background-color: transparent;
+}
+
 .button {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
     opacity: 0;
-    position: relative;
+    position: absolute;
     height: 80px;
     width: 80px;
     background-color: #3d3d3d;
