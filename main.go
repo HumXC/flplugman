@@ -17,8 +17,7 @@ var LogLevel = wailsLogger.DEBUG
 
 func main() {
 	app := NewApp()
-	logger := log.NewLogger(LogLevel)
-	app.logger = &log.GoLogger{SugaredLogger: logger}
+	app.logger = log.NewGoLogger(LogLevel)
 	err := wails.Run(&options.App{
 		Title:  "flplugman",
 		Width:  1024,
@@ -31,9 +30,9 @@ func main() {
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
-			&log.JSLogger{SugaredLogger: logger},
+			log.NewJSLogger(LogLevel),
 		},
-		Logger:   &log.WailsLogger{SugaredLogger: logger},
+		Logger:   log.NewWailsLogger(LogLevel),
 		LogLevel: LogLevel,
 		Windows: &windows.Options{
 			WebviewIsTransparent:              false,

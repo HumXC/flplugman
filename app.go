@@ -48,7 +48,7 @@ func (a *App) startup(ctx context.Context) {
 	a.logger.Debug("Starting up...")
 	a.GetConfig()
 	c, _ := yaml.Marshal(a.config)
-	a.logger.Info("Condif: \n", string(c))
+	a.logger.Info("Config: \n", string(c))
 	go func(ctx context.Context) {
 		modTime := time.Now() // 通过修改时间来判断更改
 		a.logger.Debug("Start monitoring wallpaper event: \"wallpaper-color-changed\"...")
@@ -265,7 +265,6 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 			return err
 		}
 		if !(!info.IsDir() && strings.HasSuffix(info.Name(), ".nfo")) {
-			a.logger.Error(err)
 			return nil
 		}
 		b, err := os.ReadFile(path)

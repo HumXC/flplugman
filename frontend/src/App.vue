@@ -1,16 +1,17 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
-import { GetConfig } from "../wailsjs/go/main/App";
-import { logger } from "./log";
 import router from "./router";
+import { logger } from "./log";
+import { config } from "./app";
+
 onMounted(() => {
     window.addEventListener("contextmenu", function (e) {
         e.preventDefault();
     });
 });
 onMounted(async () => {
-    let isGreeted = (await GetConfig()).is_greeted;
+    let isGreeted = (await config.Get()).is_greeted;
     logger.Info("is greeted: " + isGreeted);
     if (isGreeted) router.push("/home");
 });

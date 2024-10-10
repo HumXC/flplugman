@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ var ConfigPath = "./"
 func init() {
 	cfgDir, err := os.UserConfigDir()
 	if err != nil {
-		// TODO: log error
+		fmt.Println("Error getting user config directory:", err)
 		return
 	}
 	ConfigPath = filepath.Join(cfgDir, "flplugman", "config.json")

@@ -1,7 +1,10 @@
 package log
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"go.uber.org/zap"
@@ -41,16 +44,97 @@ var levelMap = map[logger.LogLevel]zapcore.Level{
 	logger.TRACE:   zap.DebugLevel,
 }
 
-func NewLogger(level logger.LogLevel) *zap.SugaredLogger {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	encoderConfig.EncodeDuration = zapcore.StringDurationEncoder
-	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	encoderConfig.EncodeName = zapcore.FullNameEncoder
-	encoder := zapcore.NewConsoleEncoder(encoderConfig)
-	core := zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), levelMap[level])
-	logger := zap.New(core, zap.AddCallerSkip(1)).Sugar()
+const (
+	Black Color = iota + 30
+	Red
+	Green
+	Yellow
+	Blue
+	Magenta
+	Cyan
+	White
+)
+
+// Color represents a text color.
+type Color uint8
+
+// Add adds the coloring to the given string.
+func (c Color) Add(s string) string {
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", uint8(c), s)
+}
+
+var levelToColor = map[zapcore.Level]Color{
+	zapcore.DebugLevel:  Magenta,
+	zapcore.InfoLevel:   Blue,
+	zapcore.WarnLevel:   Yellow,
+	zapcore.ErrorLevel:  Red,
+	zapcore.DPanicLevel: Red,
+	zapcore.PanicLevel:  Red,
+	zapcore.FatalLevel:  Red,
+}
+
+func NewWailsLogger(level logger.LogLevel) *WailsLogger {
+	return &WailsLogger{NewLogger(level, "Wails", Red, 1)}
+}
+func NewGoLogger(level logger.LogLevel) *GoLogger {
+	return &GoLogger{NewLogger(level, "Go   ", Blue, 0)}
+}
+func NewJSLogger(level logger.LogLevel) *JSLogger {
+	return &JSLogger{NewLogger(level, "JS   ", Yellow, 1)}
+}
+func NewLogger(level logger.LogLevel, tag string, tagColor Color, callerSkip int) *zap.SugaredLogger {
+	colorTag := tagColor.Add(tag)
+	consoleEncoderCfg := zap.NewProductionEncoderConfig()
+	consoleEncoderCfg.ConsoleSeparator = "	"
+	consoleEncoderCfg.EncodeTime = func(t time.Time, pae zapcore.PrimitiveArrayEncoder) {
+		// FIXME: 用更好的方式显示 tag
+		pae.AppendString(t.Format("2006-01-02 15:04:05.000") + consoleEncoderCfg.ConsoleSeparator + colorTag)
+	}
+	consoleEncoderCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	consoleEncoderCfg.EncodeDuration = zapcore.StringDurationEncoder
+	consoleEncoderCfg.EncodeCaller = func(ec zapcore.EntryCaller, pae zapcore.PrimitiveArrayEncoder) {}
+	consoleEncoderCfg.EncodeName = zapcore.FullNameEncoder
+
+	consoleEncoder := zapcore.NewConsoleEncoder(consoleEncoderCfg)
+	consoleCore := zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), levelMap[level])
+
+	fileEncoderCfg := zap.NewProductionEncoderConfig()
+	fileEncoderCfg.EncodeTime = func(t time.Time, pae zapcore.PrimitiveArrayEncoder) {
+		pae.AppendString(t.Format("2006-01-02 15:04:05.000") + consoleEncoderCfg.ConsoleSeparator + tag)
+	}
+	fileEncoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
+	fileEncoderCfg.EncodeDuration = zapcore.StringDurationEncoder
+	fileEncoderCfg.EncodeCaller = zapcore.ShortCallerEncoder
+	fileEncoderCfg.EncodeName = zapcore.FullNameEncoder
+
+	fileEncoder := zapcore.NewJSONEncoder(fileEncoderCfg)
+	cfgDir, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Println("Error getting user config directory:", err)
+	} else {
+		// 保留最近的10个日志文件
+		files, _ := filepath.Glob(filepath.Join(cfgDir, "flplugman", "flplugman*.log"))
+		if len(files) > 10 {
+			for i := 0; i < len(files)-10; i++ {
+				os.Remove(files[i])
+			}
+		}
+	}
+	logFileName := filepath.Join(cfgDir, "flplugman", "flplugman"+time.Now().Format("2006-01-02")+".log")
+	logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+	}
+	fileCore := zapcore.NewCore(fileEncoder, zapcore.Lock(logFile), levelMap[level])
+
+	core := consoleCore
+	if err == nil {
+		core = zapcore.NewTee(consoleCore, fileCore)
+	}
+	logger := zap.New(
+		core,
+		zap.AddCallerSkip(callerSkip), zap.AddCaller(),
+	).Sugar()
 	return logger
 }
 
@@ -59,111 +143,46 @@ type WailsLogger struct {
 }
 
 func (l *WailsLogger) Debug(message string) {
-	l.SugaredLogger.Debug("Wails | ", message)
+	l.SugaredLogger.Debug(message)
 }
 func (l *WailsLogger) Error(message string) {
-	l.SugaredLogger.Error("Wails | ", message)
+	l.SugaredLogger.Error(message)
 }
 func (l *WailsLogger) Fatal(message string) {
-	l.SugaredLogger.Fatal("Wails | ", message)
+	l.SugaredLogger.Fatal(message)
 }
 func (l *WailsLogger) Info(message string) {
-	l.SugaredLogger.Info("Wails | ", message)
+	l.SugaredLogger.Info(message)
 }
 func (l *WailsLogger) Print(message string) {
-	l.SugaredLogger.Info("Wails | ", message)
+	l.SugaredLogger.Info(message)
 }
 func (l *WailsLogger) Trace(message string) {
 	l.Debug(message)
 }
 func (l *WailsLogger) Warning(message string) {
-	l.SugaredLogger.Warn("Wails | ", message)
+	l.SugaredLogger.Warn(message)
 }
 
 type GoLogger struct {
-	SugaredLogger *zap.SugaredLogger
+	*zap.SugaredLogger
 }
-
-func (g *GoLogger) Debug(args ...any) {
-	g.SugaredLogger.Debug(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Debugf(template string, args ...any) {
-	g.SugaredLogger.Debugf("   Go | "+template, args...)
-}
-func (g *GoLogger) Debugln(args ...any) {
-	g.SugaredLogger.Debugln(append([]any{"   Go |"}, args...)...)
-}
-func (g *GoLogger) Debugw(msg string, keysAndValues ...any) {
-	g.SugaredLogger.Debugw("   Go | "+msg, keysAndValues...)
-}
-func (g *GoLogger) Error(args ...any) {
-	g.SugaredLogger.Error(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Errorf(template string, args ...any) {
-	g.SugaredLogger.Errorf("   Go | "+template, args...)
-}
-func (g *GoLogger) Errorln(args ...any) {
-	g.SugaredLogger.Errorln(append([]any{"   Go |"}, args...)...)
-}
-func (g *GoLogger) Errorw(msg string, keysAndValues ...any) {
-	g.SugaredLogger.Errorw("   Go | "+msg, keysAndValues...)
-}
-func (g *GoLogger) Fatal(args ...any) {
-	g.SugaredLogger.Fatal(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Fatalf(template string, args ...any) {
-	g.SugaredLogger.Fatalf("   Go | "+template, args...)
-}
-func (g *GoLogger) Fatalln(args ...any) {
-	g.SugaredLogger.Fatalln(append([]any{"   Go |"}, args...)...)
-}
-func (g *GoLogger) Fatalw(msg string, keysAndValues ...any) {
-	g.SugaredLogger.Fatalw("   Go | "+msg, keysAndValues...)
-}
-func (g *GoLogger) Info(args ...any) {
-	g.SugaredLogger.Info(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Infof(template string, args ...any) {
-	g.SugaredLogger.Infof("   Go | "+template, args...)
-}
-func (g *GoLogger) Infoln(args ...any) {
-	g.SugaredLogger.Infoln(append([]any{"   Go |"}, args...)...)
-}
-func (g *GoLogger) Infow(msg string, keysAndValues ...any) {
-	g.SugaredLogger.Infow("   Go | "+msg, keysAndValues...)
-}
-func (g *GoLogger) Print(args ...any) {
-	g.SugaredLogger.Info(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Warn(args ...any) {
-	g.SugaredLogger.Warn(append([]any{"   Go | "}, args...)...)
-}
-func (g *GoLogger) Warnf(template string, args ...any) {
-	g.SugaredLogger.Warnf("   Go | "+template, args...)
-}
-func (g *GoLogger) Warnln(args ...any) {
-	g.SugaredLogger.Warnln(append([]any{"   Go |"}, args...)...)
-}
-func (g *GoLogger) Warnw(msg string, keysAndValues ...any) {
-	g.SugaredLogger.Warnw("   Go | "+msg, keysAndValues...)
-}
-
 type JSLogger struct {
 	SugaredLogger *zap.SugaredLogger
 }
 
 func (j *JSLogger) Debug(message string) {
-	j.SugaredLogger.Debug("   JS | " + message)
+	j.SugaredLogger.Debug(message)
 }
 func (j *JSLogger) Error(message string) {
-	j.SugaredLogger.Error("   JS | ", message)
+	j.SugaredLogger.Error(message)
 }
 func (j *JSLogger) Fatal(message string) {
-	j.SugaredLogger.Fatal("   JS | ", message)
+	j.SugaredLogger.Fatal(message)
 }
 func (j *JSLogger) Info(message string) {
-	j.SugaredLogger.Info("   JS | ", message)
+	j.SugaredLogger.Info(message)
 }
 func (j *JSLogger) Warn(message string) {
-	j.SugaredLogger.Warn("   JS | ", message)
+	j.SugaredLogger.Warn(message)
 }
