@@ -16,10 +16,9 @@ var assets embed.FS
 var LogLevel = wailsLogger.DEBUG
 
 func main() {
-	// Create an instance of the app structure
 	app := NewApp()
 	logger := log.NewLogger(LogLevel)
-	// Create application with options
+	app.logger = &log.GoLogger{SugaredLogger: logger}
 	err := wails.Run(&options.App{
 		Title:  "flplugman",
 		Width:  1024,

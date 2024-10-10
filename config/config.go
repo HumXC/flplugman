@@ -24,26 +24,28 @@ type Config struct {
 	FLDataDir string `json:"fl_data_dir"`
 }
 
-func Get() (Config, error) {
+func Get() (Config, bool, error) {
 	var c Config
+	var isInit bool
 	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
+		isInit = true
 		key, err := registry.OpenKey(registry.CURRENT_USER, `Software\Image-Line\Shared\Paths`, registry.QUERY_VALUE)
 		if err != nil {
-			return c, err
+			return c, isInit, err
 		}
 		val, _, err := key.GetStringValue("Shared data")
 		if err != nil {
-			return c, err
+			return c, isInit, err
 		}
 		c.FLDataDir = val
-		return c, nil
+		return c, isInit, nil
 	}
 	b, err := os.ReadFile(ConfigPath)
 	if err != nil {
-		return c, err
+		return c, isInit, err
 	}
 	err = json.Unmarshal(b, &c)
-	return c, err
+	return c, isInit, err
 }
 
 func Remove() error {

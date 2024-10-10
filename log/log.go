@@ -85,7 +85,7 @@ type GoLogger struct {
 }
 
 func (g *GoLogger) Debug(args ...any) {
-	g.SugaredLogger.Debugw("   Go | ", args...)
+	g.SugaredLogger.Debug(append([]any{"   Go | "}, args...)...)
 }
 func (g *GoLogger) Debugf(template string, args ...any) {
 	g.SugaredLogger.Debugf("   Go | "+template, args...)
@@ -97,7 +97,7 @@ func (g *GoLogger) Debugw(msg string, keysAndValues ...any) {
 	g.SugaredLogger.Debugw("   Go | "+msg, keysAndValues...)
 }
 func (g *GoLogger) Error(args ...any) {
-	g.SugaredLogger.Errorw("   Go | ", args...)
+	g.SugaredLogger.Error(append([]any{"   Go | "}, args...)...)
 }
 func (g *GoLogger) Errorf(template string, args ...any) {
 	g.SugaredLogger.Errorf("   Go | "+template, args...)
@@ -109,7 +109,7 @@ func (g *GoLogger) Errorw(msg string, keysAndValues ...any) {
 	g.SugaredLogger.Errorw("   Go | "+msg, keysAndValues...)
 }
 func (g *GoLogger) Fatal(args ...any) {
-	g.SugaredLogger.Fatalw("   Go | ", args...)
+	g.SugaredLogger.Fatal(append([]any{"   Go | "}, args...)...)
 }
 func (g *GoLogger) Fatalf(template string, args ...any) {
 	g.SugaredLogger.Fatalf("   Go | "+template, args...)
@@ -121,7 +121,7 @@ func (g *GoLogger) Fatalw(msg string, keysAndValues ...any) {
 	g.SugaredLogger.Fatalw("   Go | "+msg, keysAndValues...)
 }
 func (g *GoLogger) Info(args ...any) {
-	g.SugaredLogger.Infow("   Go | ", args...)
+	g.SugaredLogger.Info(append([]any{"   Go | "}, args...)...)
 }
 func (g *GoLogger) Infof(template string, args ...any) {
 	g.SugaredLogger.Infof("   Go | "+template, args...)
@@ -132,8 +132,11 @@ func (g *GoLogger) Infoln(args ...any) {
 func (g *GoLogger) Infow(msg string, keysAndValues ...any) {
 	g.SugaredLogger.Infow("   Go | "+msg, keysAndValues...)
 }
+func (g *GoLogger) Print(args ...any) {
+	g.SugaredLogger.Info(append([]any{"   Go | "}, args...)...)
+}
 func (g *GoLogger) Warn(args ...any) {
-	g.SugaredLogger.Warnw("   Go | ", args...)
+	g.SugaredLogger.Warn(append([]any{"   Go | "}, args...)...)
 }
 func (g *GoLogger) Warnf(template string, args ...any) {
 	g.SugaredLogger.Warnf("   Go | "+template, args...)
