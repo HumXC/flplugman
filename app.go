@@ -152,7 +152,7 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 		a.logger.Error(err)
 		return Plugin{}, err
 	}
-	runtime.LogInfof(a.ctx, "Moving plugin [%s] from %s to %s", plug.Name, plug.PresetPath, path)
+	a.logger.Infof("Moving plugin [%s] from %s to %s", plug.Name, plug.PresetPath, path)
 	p := *plug
 	if filepath.IsAbs(path) {
 		err := fmt.Errorf("path \"%s\" must be relative path", path)
@@ -183,7 +183,7 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 		}
 	}
 	// 移动 .fst
-	a.logger.Debug("Rename", "src", p.FstName, "dist", distFst)
+	a.logger.Debugw("Rename", "src", p.FstName, "dist", distFst)
 	if err := os.Rename(p.FstName, distFst); err != nil {
 		a.logger.Error(err)
 		return p, err
@@ -198,13 +198,13 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 			a.logger.Error(err)
 			return p, err
 		}
-		a.logger.Debug("Remove", "path", filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap))
+		a.logger.Debugw("Remove", "path", filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap))
 		if err := os.Remove(filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap)); err != nil {
 			a.logger.Error(err)
 			return p, err
 		}
 		coverSuffix := "." + strings.Split(p.CoverMimeType, "/")[1]
-		a.logger.Debug("Write", "path", dist+coverSuffix)
+		a.logger.Debugw("Write", "path", dist+coverSuffix)
 		if err := os.WriteFile(dist+coverSuffix, bitmap, 0644); err != nil {
 			a.logger.Error(err)
 			return p, err
@@ -212,28 +212,31 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 		p.Nfo.Bitmap = p.Name + coverSuffix
 	}
 	// 移动 .nfo
-	a.logger.Debug("Write", "path", distNfo)
-	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
-		a.logger.Error(err)
-		return p, err
-	}
-	a.logger.Debug("Remove", "path", p.NfoName)
+	a.logger.Debugw("Remove", "path", p.NfoName)
 	if err := os.Remove(p.NfoName); err != nil {
 		a.logger.Error(err)
 		return p, err
 	}
+
+	a.logger.Debugw("Write", "path", distNfo)
+	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
+		a.logger.Error(err)
+		return p, err
+	}
+
 	p.NfoName = distNfo
 
 	srcDir := filepath.Join(flPluginDB, p.PresetPath)
-	p.PresetPath = path
+	p.PresetPath = strings.Trim(path, "\\/")
 	// TODO: 让文件夹也是一种可管理的资源, 而不是直接删除
-	if ds, err := deleteEmptyDir(srcDir); err != nil {
-		a.logger.Error(err)
-		return p, err
-	} else {
-		a.logger.Debugw("Delete empty directory", "dirs", ds)
+	if _, err := os.Stat(srcDir); !os.IsNotExist(err) {
+		if ds, err := deleteEmptyDir(srcDir); err != nil {
+			a.logger.Error(err)
+			return p, err
+		} else {
+			a.logger.Infow("Delete empty directory", "dirs", ds)
+		}
 	}
-
 	return p, nil
 }
 
@@ -289,14 +292,18 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 			return err
 		}
 		base := filepath.Base(p.PS.PresetFilename)
-		vendornames := []string{}
+		vendornamesMap := map[string]struct{}{}
 		for _, v := range p.PS.File {
-			vendornames = append(vendornames, v.Vendorname)
+			vendornamesMap[v.Vendorname] = struct{}{}
+		}
+		vendornames := make([]string, 0, len(vendornamesMap))
+		for k := range vendornamesMap {
+			vendornames = append(vendornames, k)
 		}
 
 		pp := Plugin{
 			Nfo:        p,
-			PresetPath: filepath.Dir(rel),
+			PresetPath: strings.Trim(filepath.Dir(rel), "\\/"),
 			Name:       base[:len(base)-4],
 			FstName:    p.PS.PresetFilename,
 			NfoName:    p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
