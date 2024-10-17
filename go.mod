@@ -21,6 +21,7 @@ require (
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/cascax/colorthief-go v0.0.0-20200408142718-f393563c12c5
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect

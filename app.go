@@ -15,6 +15,7 @@ import (
 	"github.com/HumXC/flplugman/log"
 	"github.com/HumXC/flplugman/nfo"
 	"github.com/cascax/colorthief-go"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/reujab/wallpaper"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/yaml.v3"
@@ -27,8 +28,10 @@ type Plugin struct {
 	FstName       string // .fst 的完整路径
 	NfoName       string // .nfo 的完整路径
 	Vendorname    string
-	Cover         string // 封面的 Base64 编码
-	CoverMimeType string // 封面的类型
+	Cover         string   // 封面的 Base64 编码
+	CoverMimeType string   // 封面的类型
+	Category      []string // 插件分类
+	Bitsize       int      // 插件位宽 32 就是 32位，64就是 64位，96就是 32/64位
 }
 
 // App struct
@@ -233,7 +236,7 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 		if ds, err := deleteEmptyDir(srcDir); err != nil {
 			a.logger.Error(err)
 			return p, err
-		} else {
+		} else if len(ds) != 0 {
 			a.logger.Infow("Delete empty directory", "dirs", ds)
 		}
 	}
@@ -292,22 +295,37 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 			return err
 		}
 		base := filepath.Base(p.PS.PresetFilename)
-		vendornamesMap := map[string]struct{}{}
-		for _, v := range p.PS.File {
-			vendornamesMap[v.Vendorname] = struct{}{}
-		}
-		vendornames := make([]string, 0, len(vendornamesMap))
-		for k := range vendornamesMap {
-			vendornames = append(vendornames, k)
-		}
-
 		pp := Plugin{
 			Nfo:        p,
 			PresetPath: strings.Trim(filepath.Dir(rel), "\\/"),
 			Name:       base[:len(base)-4],
 			FstName:    p.PS.PresetFilename,
 			NfoName:    p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
-			Vendorname: strings.Join(vendornames, ","),
+		}
+		vendornames := mapset.NewSet[string]()
+		category := mapset.NewSet[string]()
+		bitsize := 0
+		for _, v := range p.PS.File {
+			if v.Vendorname != "" {
+				vendornames.Add(v.Vendorname)
+			}
+			if v.Category != "" {
+				for _, c := range strings.Split(v.Category, "|") {
+					category.Add(c)
+				}
+			}
+			bitsize += v.BitSize
+		}
+
+		pp.Vendorname = strings.Join(vendornames.ToSlice(), ",")
+		pp.Category = category.ToSlice()
+		switch float32(bitsize) / 32 / float32(len(p.PS.File)) {
+		case 1:
+			pp.Bitsize = 32
+		case 2:
+			pp.Bitsize = 64
+		default:
+			pp.Bitsize = 96
 		}
 		if p.Bitmap != "" {
 			bitmap := filepath.Join(filepath.Dir(path), p.Bitmap)
@@ -319,6 +337,7 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 				pp.CoverMimeType = http.DetectContentType(f)
 			}
 		}
+
 		result = append(result, pp)
 		return nil
 	})

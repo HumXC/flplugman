@@ -12,6 +12,8 @@ export namespace plugin {
         declare readonly FstName: string;
         declare readonly NfoName: string;
         declare readonly Vendorname: string;
+        declare readonly Bitsize: number;
+        declare readonly Category: string[];
         GetCoverURL(): string {
             return `url(data:${this.CoverMimeType};base64,${this.Cover})`;
         }
