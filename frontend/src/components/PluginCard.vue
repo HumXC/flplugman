@@ -46,7 +46,7 @@ async function movePreset() {
     flex-direction: column;
     align-items: start;
     justify-content: flex-start;
-    height: 150px;
+    height: 130px;
     max-width: 350px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -63,10 +63,10 @@ async function movePreset() {
 }
 .tip {
     padding-left: 3px;
-    font-size: 14px;
+    font-size: 12px;
 }
 .name {
-    font-size: 24px;
+    font-size: 18px;
     margin-bottom: 10px;
 }
 .category-container {
@@ -80,6 +80,7 @@ async function movePreset() {
 .category {
     background-color: #8383838c;
     padding: 2px 8px;
+    font-size: 14px;
     border-radius: 12px;
 }
 .bottom {
@@ -98,7 +99,7 @@ async function movePreset() {
 }
 
 .vendorname {
-    font-size: 16px;
+    font-size: 14px;
     color: #acacac;
 }
 </style>
