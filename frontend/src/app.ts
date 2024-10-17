@@ -1,4 +1,11 @@
-import { GetConfig, MovePlugin, SaveConfig, ScanPluginDB } from "../wailsjs/go/main/App";
+import {
+    GetConfig,
+    MovePlugin,
+    SaveConfig,
+    ScanPluginDB,
+    OpenDirectoryDialog,
+    OpenFileDialog,
+} from "../wailsjs/go/main/App";
 import { config as cfg, main, nfo } from "../wailsjs/go/models";
 
 export namespace plugin {
@@ -15,7 +22,10 @@ export namespace plugin {
         declare readonly Bitsize: number;
         declare readonly Category: string[];
         GetCoverURL(): string {
-            return `url(data:${this.CoverMimeType};base64,${this.Cover})`;
+            return `url(${this.GetCoverData()})`;
+        }
+        GetCoverData(): string {
+            return `data:${this.CoverMimeType};base64,${this.Cover}`;
         }
         async MoveTo(dist: string) {
             const p = await MovePlugin(this, dist);
@@ -30,5 +40,24 @@ export namespace config {
     }
     export async function Save(config: cfg.Config) {
         return SaveConfig(config);
+    }
+}
+
+export namespace utils {
+    export async function ChooseDir(title: string = "", defaultDir: string = ""): Promise<string> {
+        return await OpenDirectoryDialog(title, defaultDir);
+    }
+    // await utils.ChooseFile("打开文件", "", [
+    //     {
+    //         Pattern: "*.*",
+    //         DisplayName: "All Files (*.*)",
+    //     },
+    // ]);
+    export async function ChooseFile(
+        title: string = "",
+        defaultDir: string = "",
+        filter: main.FileFilter[] = []
+    ): Promise<string> {
+        return await OpenFileDialog(title, defaultDir, filter);
     }
 }

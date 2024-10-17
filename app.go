@@ -87,6 +87,27 @@ func (a *App) startup(ctx context.Context) {
 	}(ctx)
 }
 
+func (a *App) OpenDirectoryDialog(title, defaultDir string) (string, error) {
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		DefaultDirectory: defaultDir,
+		Title:            title,
+	})
+}
+
+type FileFilter runtime.FileFilter
+
+func (a *App) OpenFileDialog(title, defaultDir string, filter []FileFilter) (string, error) {
+	filter_ := make([]runtime.FileFilter, len(filter))
+	for i, f := range filter {
+		filter_[i] = runtime.FileFilter(f)
+	}
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		DefaultDirectory: defaultDir,
+		Title:            title,
+		Filters:          filter_,
+	})
+}
+
 func (a *App) GetWallpaperColor() ([]string, error) {
 	w, err := wallpaper.Get()
 	if err != nil {
