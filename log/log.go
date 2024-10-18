@@ -63,16 +63,6 @@ func (c Color) Add(s string) string {
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", uint8(c), s)
 }
 
-var levelToColor = map[zapcore.Level]Color{
-	zapcore.DebugLevel:  Magenta,
-	zapcore.InfoLevel:   Blue,
-	zapcore.WarnLevel:   Yellow,
-	zapcore.ErrorLevel:  Red,
-	zapcore.DPanicLevel: Red,
-	zapcore.PanicLevel:  Red,
-	zapcore.FatalLevel:  Red,
-}
-
 func NewWailsLogger(level logger.LogLevel) *WailsLogger {
 	return &WailsLogger{NewLogger(level, "Wails", Red, 1)}
 }

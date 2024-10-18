@@ -22,9 +22,11 @@ export namespace plugin {
         declare readonly Bitsize: number;
         declare readonly Category: string[];
         GetCoverURL(): string {
+            if (!this.Cover) return "";
             return `url(${this.GetCoverData()})`;
         }
         GetCoverData(): string {
+            if (!this.Cover) return "";
             return `data:${this.CoverMimeType};base64,${this.Cover}`;
         }
         async MoveTo(dist: string) {
