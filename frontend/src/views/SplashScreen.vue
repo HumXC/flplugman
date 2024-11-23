@@ -1,11 +1,7 @@
 <script lang="ts" setup>
-<<<<<<< HEAD
 import { onBeforeMount, onMounted, reactive, ref, shallowRef } from "vue";
-=======
->>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
 import Greetings from "./Greet.vue";
 import Button from "../components/Button.vue";
-<<<<<<< HEAD
 import Initiating from "../components/Initiating.vue";
 import InitView from "./Init.vue";
 onMounted(() => {
@@ -30,13 +26,10 @@ function toInit() {
         FContainer.style.bottom = `${distanceToBottom}px`;
     }
 }
-=======
->>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
 </script>
 
 <template>
     <section class="Container">
-<<<<<<< HEAD
         <Transition name="scale">
             <component :is="activeComponent" />
         </Transition>
@@ -47,10 +40,6 @@ function toInit() {
             <Button class="FloatBtn" @click="toInit()" />
         </div>
         <!-- <RouterLink to="/home"><Button id="btn" /></RouterLink> -->
-=======
-        <Greetings />
-        <RouterLink to="/home"><Button id="btn" /></RouterLink>
->>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
     </section>
 </template>
 
@@ -58,12 +47,14 @@ function toInit() {
 .scale-enter-active,
 .scale-leave-active {
     opacity: 1;
-    transition: all 1s cubic-bezier(0.82, 0, 0.58, 1);
+    filter: blur(0);
+    transition: all .7s cubic-bezier(0.82, 0, 0.58, 1);
 }
 
 .scale-enter-from,
 .scale-leave-to {
     opacity: 0;
+    filter: blur(10px);
 }
 
 .Container {

@@ -1,34 +1,49 @@
 <template>
-    <main id="Main">
-        <h2 id="Title">{{ Init.title }}</h2>
-        <div id="Context">
-            <h1>{{ Init.choose }}</h1>
-            <div class="button">
-                <p>{{ Init.chooseDir }}</p>
+    <div>
+        <main id="Main">
+            <h2 id="Title">{{ Init.title }}</h2>
+            <div id="Context">
+                <h1 id="Message">{{ Init.choose }}</h1>
+                <span style="font-size: 24px; font-weight: 500;">{{ Init.chooseRoute }}</span>
+                <div class="button" @click="chooseDir()">
+                    <p>{{ Init.chooseDir }}</p>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import Dialog from '../components/Dialog.vue';
+import { utils } from '../app'
 
 const Init = ref({
     title: '现在，进行一些初始设置...',
     choose: '选择你的 FL Studio 用户数据目录',
-    chooseTip: '我们已找到你的 FL Studio 用户数据目录！',
+    chooseTip: '你已选择以下的路径，它没问题吗？',
     chooseDir: '选择文件夹',
+    chooseRoute: '',
 });
 
 async function chooseDir() {
-    // TODO
+    utils.ChooseDir()
+        .then(dir => {
+            Init.value.title = ''
+            Init.value.choose = Init.value.chooseTip;
+            Init.value.chooseRoute = dir;
+            Init.value.chooseDir = '重新选择';
+        })
+        .catch(err => {
+            Init.value.chooseRoute = '错误';
+            Dialog.message = err;
+        });
 }
 
 function StartUp() {
     const Main = document.getElementById('Main') as HTMLElement;
-    const Context = document.getElementById('Context') as HTMLElement;
     const Title = document.getElementById('Title') as HTMLElement;
+    const Context = document.getElementById('Context') as HTMLElement;
 
     if (!Main || !Context || !Title) return;
 
@@ -101,7 +116,7 @@ main {
 
 h1,
 h2 {
-    font-size: 48px;
+    font-size: 42px;
 }
 
 @keyframes FadeUp {
