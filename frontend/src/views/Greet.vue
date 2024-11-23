@@ -37,12 +37,18 @@ function RollingUp() {
     // Init 位置
     ctn.style.transform = `translateY(${SectionHeight}px)`;
 
-    ctn.animate([{ transform: `translateY(${SectionHeight}px)` }, { transform: `translateY(0)` }], {
-        duration: 1000,
-        easing: "cubic-bezier(0.7, -0.01, 0.15, 1.03)",
-        fill: "forwards",
-        delay: 1000,
-    });
+    ctn.animate(
+        [
+            { transform: `translateY(${SectionHeight}px)` },
+            { transform: `translateY(0)` }
+        ],
+        {
+            duration: 1000,
+            easing: "cubic-bezier(0.7, -0.01, 0.15, 1.03)",
+            fill: "forwards",
+            delay: 1000,
+        }
+    );
 
     setTimeout(() => {
         ctn.style.transition = '';

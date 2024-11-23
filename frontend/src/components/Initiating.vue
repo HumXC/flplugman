@@ -1,5 +1,5 @@
 <template>
-    <div class="ButtonContainer">
+    <div class="InitContainer">
         <div class="button">
             <div class="arrow">
                 <svg t="1727575500694" viewBox="0 0 1000 1000" version="1.1" xmlns="http://www.w3.org/2000/svg"
@@ -12,10 +12,6 @@
         </div>
     </div>
 </template>
-
-<script setup lang="ts">
-import * as backend from '../../wailsjs/go/main/App'
-</script>
 
 <style scoped>
 @keyframes BlurOut {
@@ -31,7 +27,7 @@ import * as backend from '../../wailsjs/go/main/App'
     }
 }
 
-.ButtonContainer {
+.InitContainer {
     display: flex;
     position: relative;
     height: 80px;
@@ -40,40 +36,14 @@ import * as backend from '../../wailsjs/go/main/App'
 }
 
 .button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
     opacity: 0;
     position: absolute;
     height: 80px;
     width: 80px;
-    background-color: #3d3d3d;
     border-radius: 100%;
-    color: #fff;
-    cursor: pointer;
-    font-size: 1.5rem;
     animation: BlurOut 2s cubic-bezier(0.7, -0.01, 0.15, 1.03);
     animation-delay: 2s;
     animation-fill-mode: forwards;
-}
-
-.button .arrow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    height: 30px;
-    width: 30px;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.button .arrow svg {
-    fill: #fff;
-    height: 100%;
-    width: 100%;
-    transform: rotate(-90deg);
 }
 
 .button::before {
@@ -85,7 +55,6 @@ import * as backend from '../../wailsjs/go/main/App'
     height: 80px;
     border-radius: 50px;
     z-index: 1;
-    transform: scale(0);
     box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.55);
     transition: transform 0.5s cubic-bezier(0.7, -0.01, 0.15, 1.03);
     background: radial-gradient(circle at center, #2409bb, #5121ff, #8143ff, #3258ff, #6200ff);
@@ -95,16 +64,6 @@ import * as backend from '../../wailsjs/go/main/App'
     -webkit-animation: FadeGradient var(--anime-speed) linear infinite;
     -moz-animation: FadeGradient var(--anime-speed) linear infinite;
     animation: FadeGradient var(--anime-speed) linear infinite;
-}
-
-.button:hover::before {
-    transform: scale(1.2);
-    transition: transform 0.3s cubic-bezier(0.7, -0.01, 0.15, 1.03);
-}
-
-.button:active::before {
-    transform: scale(1.1);
-    transition: transform 0.1s cubic-bezier(0.7, -0.01, 0.15, 1.03);
 }
 
 @keyframes FadeGradient {
