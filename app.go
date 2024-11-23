@@ -12,10 +12,13 @@ import (
 	"time"
 
 	"github.com/HumXC/flplugman/config"
+	"github.com/HumXC/flplugman/log"
 	"github.com/HumXC/flplugman/nfo"
 	"github.com/cascax/colorthief-go"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/reujab/wallpaper"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"gopkg.in/yaml.v3"
 )
 
 type Plugin struct {
@@ -25,15 +28,17 @@ type Plugin struct {
 	FstName       string // .fst 的完整路径
 	NfoName       string // .nfo 的完整路径
 	Vendorname    string
-	Cover         string // 封面的 Base64 编码
-	CoverMimeType string // 封面的类型
+	Cover         string   // 封面的 Base64 编码
+	CoverMimeType string   // 封面的类型
+	Category      []string // 插件分类
+	Bitsize       int      // 插件位宽 32 就是 32位，64就是 64位，96就是 32/64位
 }
 
 // App struct
 type App struct {
-	ctx           context.Context
-	config        *config.Config
-	isSavedConfig bool
+	ctx    context.Context
+	config *config.Config
+	logger log.Logger
 }
 
 // NewApp creates a new App application struct
@@ -43,17 +48,22 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.logger.Debug("Starting up...")
+	a.GetConfig()
+	c, _ := yaml.Marshal(a.config)
+	a.logger.Info("Config: \n", string(c))
 	go func(ctx context.Context) {
 		modTime := time.Now() // 通过修改时间来判断更改
+		a.logger.Debug("Start monitoring wallpaper event: \"wallpaper-color-changed\"...")
 		for {
 			w, err := wallpaper.Get()
 			if err != nil {
-				runtime.LogError(ctx, err.Error())
+				a.logger.Error(err)
 				return
 			}
 			stat, err := os.Stat(w)
 			if err != nil {
-				runtime.LogError(ctx, err.Error())
+				a.logger.Error(err)
 				return
 			}
 
@@ -61,7 +71,7 @@ func (a *App) startup(ctx context.Context) {
 				modTime = stat.ModTime()
 				cs, err := colorthief.GetPaletteFromFile(w, 6)
 				if err != nil {
-					runtime.LogError(ctx, err.Error())
+					a.logger.Error(err)
 					return
 				}
 				result := make([]string, 0, len(cs))
@@ -69,6 +79,7 @@ func (a *App) startup(ctx context.Context) {
 					r, g, b, _ := c.RGBA()
 					result = append(result, fmt.Sprintf("#%02x%02x%02x", r>>8, g>>8, b>>8))
 				}
+				a.logger.Debug("event: \"wallpaper-color-changed\" emit")
 				runtime.EventsEmit(ctx, "wallpaper-color-changed", result)
 			}
 			time.Sleep(2 * time.Second)
@@ -76,13 +87,36 @@ func (a *App) startup(ctx context.Context) {
 	}(ctx)
 }
 
+func (a *App) OpenDirectoryDialog(title, defaultDir string) (string, error) {
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		DefaultDirectory: defaultDir,
+		Title:            title,
+	})
+}
+
+type FileFilter runtime.FileFilter
+
+func (a *App) OpenFileDialog(title, defaultDir string, filter []FileFilter) (string, error) {
+	filter_ := make([]runtime.FileFilter, len(filter))
+	for i, f := range filter {
+		filter_[i] = runtime.FileFilter(f)
+	}
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		DefaultDirectory: defaultDir,
+		Title:            title,
+		Filters:          filter_,
+	})
+}
+
 func (a *App) GetWallpaperColor() ([]string, error) {
 	w, err := wallpaper.Get()
 	if err != nil {
+		a.logger.Error(err)
 		return nil, err
 	}
 	cs, err := colorthief.GetPaletteFromFile(w, 6)
 	if err != nil {
+		a.logger.Error(err)
 		return nil, err
 	}
 	result := make([]string, 0, len(cs))
@@ -94,9 +128,13 @@ func (a *App) GetWallpaperColor() ([]string, error) {
 }
 
 func (a *App) GetConfig() (config.Config, error) {
-	if a.config == nil || a.isSavedConfig {
-		c, err := config.Get()
+	a.logger.Debugw("Get config")
+	if a.config == nil {
+		a.logger.Debugw("Load config file", "configFile", config.ConfigPath)
+		c, isInit, err := config.Get()
+		a.logger.Debugw("Config loaded", "isInit", isInit)
 		if err != nil {
+			a.logger.Error(err)
 			return config.Config{}, err
 		}
 		a.config = &c
@@ -105,11 +143,12 @@ func (a *App) GetConfig() (config.Config, error) {
 }
 
 func (a *App) SaveConfig(c config.Config) error {
+	a.logger.Debugw("Saving config", "configFile", config.ConfigPath)
 	if err := config.Save(c); err != nil {
+		a.logger.Error(err)
 		return err
 	}
 	a.config = &c
-	a.isSavedConfig = true
 	return nil
 }
 
@@ -124,6 +163,7 @@ func (a *App) RemoveConfig() error {
 func (a *App) GetPluginDBPath() (string, error) {
 	c, err := a.GetConfig()
 	if err != nil {
+		a.logger.Error(err)
 		return "", err
 	}
 	return filepath.Join(c.FLDataDir, "FL Studio\\Presets\\Plugin database"), nil
@@ -132,20 +172,27 @@ func (a *App) GetPluginDBPath() (string, error) {
 // 移动 .nfo 和 .fst 文件到 path 目录，返回修改后的 Plugin
 func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 	if plug == nil {
-		return Plugin{}, fmt.Errorf("plugin is nil")
+		err := fmt.Errorf("plugin is nil")
+		a.logger.Error(err)
+		return Plugin{}, err
 	}
-	runtime.LogInfof(a.ctx, "MovePlugin %s: %s to %s", plug.Name, plug.PresetPath, path)
+	a.logger.Infof("Moving plugin [%s] from %s to %s", plug.Name, plug.PresetPath, path)
 	p := *plug
 	if filepath.IsAbs(path) {
-		return p, fmt.Errorf("path \"%s\" must be relative path", path)
+		err := fmt.Errorf("path \"%s\" must be relative path", path)
+		a.logger.Error(err)
+		return p, err
 	}
 	flPluginDB, err := a.GetPluginDBPath()
 	if err != nil {
+		a.logger.Error(err)
 		return p, err
 	}
 	path = filepath.Clean(path)
 	if path == "" {
-		return p, fmt.Errorf("path is empty")
+		err := fmt.Errorf("path is empty")
+		a.logger.Error(err)
+		return p, err
 	}
 
 	dist := filepath.Join(flPluginDB, path, p.Name)
@@ -153,12 +200,16 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 	distNfo := dist + ".nfo"
 
 	if _, err := os.Stat(filepath.Dir(dist)); os.IsNotExist(err) {
+		a.logger.Debugw("Create directory", "path", filepath.Dir(dist))
 		if err := os.MkdirAll(filepath.Dir(dist), 0644); err != nil {
+			a.logger.Error(err)
 			return p, err
 		}
 	}
 	// 移动 .fst
+	a.logger.Debugw("Rename", "src", p.FstName, "dist", distFst)
 	if err := os.Rename(p.FstName, distFst); err != nil {
+		a.logger.Error(err)
 		return p, err
 	}
 	p.FstName = distFst
@@ -168,57 +219,76 @@ func (a *App) MovePlugin(plug *Plugin, path string) (Plugin, error) {
 	if p.Cover != "" {
 		bitmap, err := base64.StdEncoding.DecodeString(p.Cover)
 		if err != nil {
+			a.logger.Error(err)
 			return p, err
 		}
-
+		a.logger.Debugw("Remove", "path", filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap))
 		if err := os.Remove(filepath.Join(filepath.Dir(p.NfoName), p.Nfo.Bitmap)); err != nil {
+			a.logger.Error(err)
 			return p, err
 		}
 		coverSuffix := "." + strings.Split(p.CoverMimeType, "/")[1]
+		a.logger.Debugw("Write", "path", dist+coverSuffix)
 		if err := os.WriteFile(dist+coverSuffix, bitmap, 0644); err != nil {
+			a.logger.Error(err)
 			return p, err
 		}
 		p.Nfo.Bitmap = p.Name + coverSuffix
 	}
 	// 移动 .nfo
-	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
-		return p, err
-	}
+	a.logger.Debugw("Remove", "path", p.NfoName)
 	if err := os.Remove(p.NfoName); err != nil {
+		a.logger.Error(err)
 		return p, err
 	}
+
+	a.logger.Debugw("Write", "path", distNfo)
+	if err := os.WriteFile(distNfo, nfo.Marshal(p.Nfo), 0644); err != nil {
+		a.logger.Error(err)
+		return p, err
+	}
+
 	p.NfoName = distNfo
 
 	srcDir := filepath.Join(flPluginDB, p.PresetPath)
-	p.PresetPath = path
+	p.PresetPath = strings.Trim(path, "\\/")
 	// TODO: 让文件夹也是一种可管理的资源, 而不是直接删除
-	if err := deleteEmptyDir(srcDir); err != nil {
-		return p, err
+	if _, err := os.Stat(srcDir); !os.IsNotExist(err) {
+		if ds, err := deleteEmptyDir(srcDir); err != nil {
+			a.logger.Error(err)
+			return p, err
+		} else if len(ds) != 0 {
+			a.logger.Infow("Delete empty directory", "dirs", ds)
+		}
 	}
-
 	return p, nil
 }
 
-func deleteEmptyDir(dir string) error {
+func deleteEmptyDir(dir string) ([]string, error) {
+	deleted := []string{}
 	es, err := os.ReadDir(dir)
-	if err != nil {
-		return err
+	if err != nil || len(es) != 0 {
+		return deleted, err
 	}
-	if len(es) == 0 {
-		if err := os.Remove(dir); err != nil {
-			return deleteEmptyDir(filepath.Dir(dir))
-		}
+
+	if err := os.Remove(dir); err != nil {
+		return deleted, err
 	}
-	return nil
+	deleted = append(deleted, dir)
+	d, err := deleteEmptyDir(filepath.Dir(dir))
+	return append(deleted, d...), err
 }
 func (a *App) ScanPluginDB() ([]Plugin, error) {
 	PluginDBPath, err := a.GetPluginDBPath()
+	a.logger.Infow("Scan plugin db", "path", PluginDBPath)
 	if err != nil {
+		a.logger.Error(err)
 		return nil, err
 	}
 	result := make([]Plugin, 0)
 	e := filepath.Walk(PluginDBPath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
+			a.logger.Error(err)
 			return err
 		}
 		if !(!info.IsDir() && strings.HasSuffix(info.Name(), ".nfo")) {
@@ -226,10 +296,12 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 		}
 		b, err := os.ReadFile(path)
 		if err != nil {
+			a.logger.Error(err)
 			return err
 		}
 		p, err := nfo.Unmarshal(b)
 		if err != nil {
+			a.logger.Error(err)
 			return err
 		}
 		if p.PS.Name == "" {
@@ -240,34 +312,58 @@ func (a *App) ScanPluginDB() ([]Plugin, error) {
 		}
 		rel, err := filepath.Rel(PluginDBPath, p.PS.PresetFilename)
 		if err != nil {
+			a.logger.Error(err)
 			return err
 		}
 		base := filepath.Base(p.PS.PresetFilename)
-		vendornames := []string{}
-		for _, v := range p.PS.File {
-			vendornames = append(vendornames, v.Vendorname)
-		}
-
 		pp := Plugin{
 			Nfo:        p,
-			PresetPath: filepath.Dir(rel),
+			PresetPath: strings.Trim(filepath.Dir(rel), "\\/"),
 			Name:       base[:len(base)-4],
 			FstName:    p.PS.PresetFilename,
 			NfoName:    p.PS.PresetFilename[:len(p.PS.PresetFilename)-4] + ".nfo",
-			Vendorname: strings.Join(vendornames, ","),
+		}
+		vendornames := mapset.NewSet[string]()
+		category := mapset.NewSet[string]()
+		bitsize := 0
+		for _, v := range p.PS.File {
+			if v.Vendorname != "" {
+				vendornames.Add(v.Vendorname)
+			}
+			if v.Category != "" {
+				for _, c := range strings.Split(v.Category, "|") {
+					category.Add(c)
+				}
+			}
+			bitsize += v.BitSize
+		}
+
+		pp.Vendorname = strings.Join(vendornames.ToSlice(), ",")
+		pp.Category = category.ToSlice()
+		switch float32(bitsize) / 32 / float32(len(p.PS.File)) {
+		case 1:
+			pp.Bitsize = 32
+		case 2:
+			pp.Bitsize = 64
+		default:
+			pp.Bitsize = 96
 		}
 		if p.Bitmap != "" {
 			bitmap := filepath.Join(filepath.Dir(path), p.Bitmap)
 			f, err := os.ReadFile(bitmap)
 			if err != nil {
-				runtime.LogError(a.ctx, err.Error())
+				a.logger.Error(err)
 			} else {
 				pp.Cover = base64.StdEncoding.EncodeToString(f)
 				pp.CoverMimeType = http.DetectContentType(f)
 			}
 		}
+
 		result = append(result, pp)
 		return nil
 	})
+	if e != nil {
+		a.logger.Error(e)
+	}
 	return result, e
 }

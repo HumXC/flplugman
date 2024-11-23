@@ -1,9 +1,11 @@
 <script lang="ts" setup>
+<<<<<<< HEAD
 import { onBeforeMount, onMounted, reactive, ref, shallowRef } from "vue";
+=======
+>>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
 import Greetings from "./Greet.vue";
-import { GetConfig } from "../../wailsjs/go/main/App";
-import { LogInfo } from "../../wailsjs/runtime/runtime";
 import Button from "../components/Button.vue";
+<<<<<<< HEAD
 import Initiating from "../components/Initiating.vue";
 import InitView from "./Init.vue";
 onMounted(() => {
@@ -28,10 +30,13 @@ function toInit() {
         FContainer.style.bottom = `${distanceToBottom}px`;
     }
 }
+=======
+>>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
 </script>
 
 <template>
     <section class="Container">
+<<<<<<< HEAD
         <Transition name="scale">
             <component :is="activeComponent" />
         </Transition>
@@ -42,6 +47,10 @@ function toInit() {
             <Button class="FloatBtn" @click="toInit()" />
         </div>
         <!-- <RouterLink to="/home"><Button id="btn" /></RouterLink> -->
+=======
+        <Greetings />
+        <RouterLink to="/home"><Button id="btn" /></RouterLink>
+>>>>>>> 161c672508ea0a5f0677153c2bc1565f32fff97a
     </section>
 </template>
 

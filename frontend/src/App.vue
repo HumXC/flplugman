@@ -1,10 +1,19 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
+import router from "./router";
+import { logger } from "./log";
+import { config } from "./app";
+
 onMounted(() => {
   window.addEventListener("contextmenu", function (e) {
     e.preventDefault();
   });
+});
+onMounted(async () => {
+  let isGreeted = (await config.Get()).is_greeted;
+  logger.Info("is greeted: " + isGreeted);
+  if (isGreeted) router.push("/home");
 });
 </script>
 
@@ -16,18 +25,17 @@ onMounted(() => {
   </router-view>
 </template>
 
-<style>
+<style scoped>
 .scale-enter-active,
 .scale-leave-active {
   opacity: 1;
-  transform: scale(1);
-  transition: all 0.4s cubic-bezier(0.82, 0, 0.58, 1);
+  filter: blur(0px);
+  transition: filter 0s ease, opacity 0.5s ease;
 }
 
 .scale-enter-from,
 .scale-leave-to {
   opacity: 0;
-  transform: scale(0.9);
-  /* 缩小效果 */
+  filter: blur(10px);
 }
 </style>
